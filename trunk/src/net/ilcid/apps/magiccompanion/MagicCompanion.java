@@ -2,11 +2,13 @@ package net.ilcid.apps.magiccompanion;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +18,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class MagicCompanion extends Activity {
+	private PowerManager.WakeLock wakeLock;
+	
 	private final static int MENU_SET_LIFE = 1;
 	private final static int MENU_RESET_LIFE = 2;
 	private final static int MENU_CARD_SEARCH = 3;
@@ -35,7 +39,6 @@ public class MagicCompanion extends Activity {
 	private int life;
 	
 	/** Create activity menu **/
-	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
 		Resources res = getResources();
@@ -47,7 +50,6 @@ public class MagicCompanion extends Activity {
 	}
 	
 	/** Define menu actions **/
-	@Override
 	public boolean onOptionsItemSelected(MenuItem item)
 	{
 		switch(item.getItemId())
@@ -69,7 +71,6 @@ public class MagicCompanion extends Activity {
 	}
 	
 	/** Called first time dialog is created **/
-	@Override
 	protected Dialog onCreateDialog(int id)
 	{
 		Dialog dialog = null;
@@ -84,7 +85,6 @@ public class MagicCompanion extends Activity {
 			final EditText searchQuery = (EditText) dialog.findViewById(R.id.dialog_card_search_query);
 			searchButton.setOnClickListener(new View.OnClickListener() 
 			{
-				@Override
 				public void onClick(View v) 
 				{
 					Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("http://magiccards.info/card.php?card=" + searchQuery.getText()));
@@ -100,7 +100,6 @@ public class MagicCompanion extends Activity {
 			});
 			searchQuery.setOnEditorActionListener(new TextView.OnEditorActionListener() 
 			{	
-				@Override
 				public boolean onEditorAction(TextView v, int actionId, KeyEvent event) 
 				{
 					if(event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
@@ -120,7 +119,6 @@ public class MagicCompanion extends Activity {
 			final EditText addField = (EditText) dialog.findViewById(R.id.dialog_add_life_amount);
 			addButton.setOnClickListener(new View.OnClickListener()
 			{
-				@Override
 				public void onClick(View v)
 				{
 					try
@@ -140,7 +138,6 @@ public class MagicCompanion extends Activity {
 			});
 			addField.setOnEditorActionListener(new TextView.OnEditorActionListener()
 			{
-				@Override
 				public boolean onEditorAction(TextView v, int actionId, KeyEvent event)
 				{
 					if(event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
@@ -160,7 +157,6 @@ public class MagicCompanion extends Activity {
 			final EditText subtractField = (EditText) dialog.findViewById(R.id.dialog_subtract_life_amount);
 			subtractButton.setOnClickListener(new View.OnClickListener()
 			{
-				@Override
 				public void onClick(View v) 
 				{
 					try
@@ -181,7 +177,6 @@ public class MagicCompanion extends Activity {
 			});
 			subtractField.setOnEditorActionListener(new TextView.OnEditorActionListener()
 			{		
-				@Override
 				public boolean onEditorAction(TextView v, int actionId, KeyEvent event) 
 				{
 					if(event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
@@ -201,7 +196,6 @@ public class MagicCompanion extends Activity {
 			final EditText setField = (EditText) dialog.findViewById(R.id.dialog_set_life_amount);
 			setButton.setOnClickListener(new View.OnClickListener()
 			{	
-				@Override
 				public void onClick(View v) 
 				{
 					try
@@ -221,7 +215,6 @@ public class MagicCompanion extends Activity {
 			});
 			setField.setOnEditorActionListener(new TextView.OnEditorActionListener() 
 			{	
-				@Override
 				public boolean onEditorAction(TextView v, int actionId, KeyEvent event)
 				{
 					if(event.getKeyCode() == KeyEvent.KEYCODE_ENTER)
@@ -237,7 +230,6 @@ public class MagicCompanion extends Activity {
 	}
 	
     /** Called when the activity is first created. */
-    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.magiccompanion_main);
@@ -245,7 +237,6 @@ public class MagicCompanion extends Activity {
         final Button decrementButton = (Button) findViewById(R.id.decrease);
         incrementButton.setOnClickListener(new View.OnClickListener() 
         {
-			@Override
 			public void onClick(View v) 
 			{
 				setLife(life + 1);
@@ -254,7 +245,6 @@ public class MagicCompanion extends Activity {
         incrementButton.setLongClickable(true);
         incrementButton.setOnLongClickListener(new View.OnLongClickListener() 
         {
-			@Override
 			public boolean onLongClick(View v) 
 			{
 				showDialog(DIALOG_ADD_LIFE);
@@ -263,7 +253,6 @@ public class MagicCompanion extends Activity {
 		});
         decrementButton.setOnClickListener(new View.OnClickListener() 
         {
-			@Override
 			public void onClick(View v) 
 			{
 				setLife(life - 1);		
@@ -272,7 +261,6 @@ public class MagicCompanion extends Activity {
         decrementButton.setLongClickable(true);
         decrementButton.setOnLongClickListener(new View.OnLongClickListener()
         {	
-			@Override
 			public boolean onLongClick(View v) {
 				showDialog(DIALOG_SUBTRACT_LIFE);
 				return true;
@@ -282,7 +270,29 @@ public class MagicCompanion extends Activity {
 		setLife(LIFE_DEFAULT);
     }
 
-	public void setLife(int life)
+	public void onResume()
+	{
+		super.onResume();
+		//Acquire wake-lock
+		if(this.wakeLock == null)
+		{
+			PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+			this.wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "MTGCompanion");
+		}
+		this.wakeLock.acquire();
+	}
+	
+	public void onPause()
+	{
+		super.onPause();
+		//Release wake-lock
+		if(this.wakeLock != null)
+		{
+			this.wakeLock.release();
+		}
+	}
+    
+    public void setLife(int life)
     {
     	this.life = life;
     	final TextView lifeView = (TextView)findViewById(R.id.life);
@@ -301,7 +311,6 @@ public class MagicCompanion extends Activity {
     	}
     }
 
-	@Override
 	protected void onSaveInstanceState(Bundle outState) 
 	{
 		super.onSaveInstanceState(outState);
