@@ -1,0 +1,1 @@
+MTG Companion is an Android application to assist Magic: The Gathering players. It's goal is to make player's lives easier.
